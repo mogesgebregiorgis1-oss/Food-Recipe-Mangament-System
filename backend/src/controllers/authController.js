@@ -58,7 +58,7 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Check required fields
+    
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -66,7 +66,7 @@ const login = async (req, res) => {
       });
     }
 
-    // Find user by email
+
     const [users] = await pool.query(
       "SELECT id, name, email, password FROM users WHERE email = ?",
       [email]
@@ -81,7 +81,7 @@ const login = async (req, res) => {
 
     const user = users[0];
 
-    // Compare password with hashed password
+    
     const passwordMatch = await bcrypt.compare(
       password,
       user.password
@@ -107,7 +107,7 @@ const login = async (req, res) => {
       }
     );
 
-    // Send successful response
+
     res.status(200).json({
       success: true,
       message: "Login successful",
