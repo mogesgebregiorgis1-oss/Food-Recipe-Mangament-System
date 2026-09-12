@@ -9,6 +9,7 @@ const recipeRoutes = require("./routes/recipeRoutes");
 const imageRoutes = require("./routes/imageRoutes");
 const ingredientRoutes = require("./routes/ingredientRoutes");
 const stepRoutes = require("./routes/stepRoutes");
+const likeRoutes = require("./routes/likeRoutes");
 const app = express();
 
 app.use(cors());
@@ -51,5 +52,6 @@ app.use("/api/recipes", recipeRoutes);
 app.use("/api/recipe-images", imageRoutes);
 app.use("/api/ingredients", ingredientRoutes);
 app.use("/api/recipe-steps", stepRoutes);
+app.use("/api/likes", likeRoutes);
 
 module.exports = app;

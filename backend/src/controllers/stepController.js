@@ -4,7 +4,7 @@ const addRecipeSteps = async (req, res) => {
   try {
     const { recipe_id, steps } = req.body;
 
-    // 1. Validate request
+    
     if (!recipe_id || !Array.isArray(steps)) {
       return res.status(400).json({
         success: false,
@@ -19,7 +19,7 @@ const addRecipeSteps = async (req, res) => {
       });
     }
 
-    // 2. Check recipe ownership
+
     const [recipes] = await pool.query(
       `SELECT id
        FROM recipes
@@ -35,7 +35,7 @@ const addRecipeSteps = async (req, res) => {
       });
     }
 
-    // 3. Validate every step
+
     for (const step of steps) {
       if (!step.instruction) {
         return res.status(400).json({
@@ -45,7 +45,7 @@ const addRecipeSteps = async (req, res) => {
       }
     }
 
-    // 4. Insert steps
+
     const insertedSteps = [];
 
     for (let i = 0; i < steps.length; i++) {
@@ -70,7 +70,7 @@ const addRecipeSteps = async (req, res) => {
       });
     }
 
-    // 5. Response
+   
     res.status(201).json({
       success: true,
       message: "Recipe steps added successfully",
