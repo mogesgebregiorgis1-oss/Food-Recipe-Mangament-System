@@ -456,10 +456,215 @@ const deleteRecipe = async (req, res) => {
   }
 };
 
+const getRecipeDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [recipes] = await pool.query(
+      `SELECT
+          r.id,
+          r.title,
+          r.description,
+          r.preparation_time,
+          r.created_at,
+          r.updated_at,
+
+          u.id AS creator_id,
+          u.name AS creator_name,
+          u.profile_image AS creator_profile_image,
+
+          c.id AS category_id,
+          c.name AS category_name,
+          c.description AS category_description
+
+       FROM recipes r
+
+       INNER JOIN users u
+         ON r.user_id = u.id
+
+       INNER JOIN categories c
+         ON r.category_id = c.id
+
+       WHERE r.id = ?`,
+      [id]
+    );
+
+    if (recipes.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Recipe not found"
+      });
+    }
+
+    const recipe = recipes[0];
+
+    const [images] = await pool.query(
+      `SELECT
+          id,
+          image_url,
+          is_featured,
+          created_at
+       FROM recipe_images
+       WHERE recipe_id = ?
+       ORDER BY is_featured DESC, created_at ASC`,
+      [id]
+    );
+
+    const [ingredients] = await pool.query(
+      `SELECT
+          id,
+          name,
+          quantity,
+          unit
+       FROM ingredients
+       WHERE recipe_id = ?
+       ORDER BY id ASC`,
+      [id]
+    );
+
+    const [steps] = await pool.query(
+      `SELECT
+          id,
+          step_number,
+          instruction
+       FROM recipe_steps
+       WHERE recipe_id = ?
+       ORDER BY step_number ASC`,
+      [id]
+    );
+
+    const [likeResult] = await pool.query(
+      `SELECT COUNT(*) AS like_count
+       FROM likes
+       WHERE recipe_id = ?`,
+      [id]
+    );
+
+    const [ratingResult] = await pool.query(
+      `SELECT
+          COUNT(*) AS rating_count,
+          COALESCE(AVG(rating), 0) AS average_rating
+       FROM ratings
+       WHERE recipe_id = ?`,
+      [id]
+    );
+
+    const [comments] = await pool.query(
+      `SELECT
+          c.id,
+          c.comment,
+          c.created_at,
+          c.updated_at,
+
+          u.id AS user_id,
+          u.name AS user_name,
+          u.profile_image
+
+       FROM comments c
+
+       INNER JOIN users u
+         ON c.user_id = u.id
+
+       WHERE c.recipe_id = ?
+
+       ORDER BY c.created_at DESC`,
+      [id]
+    );
+
+    let bookmarked = false;
+    let myRating = null;
+
+    if (req.user) {
+      const [bookmarkResult] = await pool.query(
+        `SELECT id
+         FROM bookmarks
+         WHERE user_id = ? AND recipe_id = ?`,
+        [req.user.id, id]
+      );
+
+      bookmarked = bookmarkResult.length > 0;
+
+      const [myRatingResult] = await pool.query(
+        `SELECT rating
+         FROM ratings
+         WHERE user_id = ? AND recipe_id = ?`,
+        [req.user.id, id]
+      );
+
+      if (myRatingResult.length > 0) {
+        myRating = myRatingResult[0].rating;
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+
+      data: {
+        recipe: {
+          id: recipe.id,
+          title: recipe.title,
+          description: recipe.description,
+          preparation_time: recipe.preparation_time,
+          created_at: recipe.created_at,
+          updated_at: recipe.updated_at
+        },
+
+        creator: {
+          id: recipe.creator_id,
+          name: recipe.creator_name,
+          profile_image: recipe.creator_profile_image
+        },
+
+        category: {
+          id: recipe.category_id,
+          name: recipe.category_name,
+          description: recipe.category_description
+        },
+
+        images,
+
+        featured_image:
+          images.find(image => image.is_featured === 1) || null,
+
+        ingredients,
+
+        steps,
+
+        likes: {
+          count: Number(likeResult[0].like_count)
+        },
+
+        rating: {
+          average: Number(
+            Number(ratingResult[0].average_rating).toFixed(2)
+          ),
+          count: Number(ratingResult[0].rating_count)
+        },
+
+        comments,
+
+        viewer: {
+          bookmarked,
+          rating: myRating
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error("Get recipe details error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+  }
+};
+
 module.exports = {
   createRecipe,
   getAllRecipes,
   getRecipeById,
   updateRecipe,
-  deleteRecipe
+  deleteRecipe,
+  getRecipeDetails
 };
