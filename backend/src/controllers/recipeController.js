@@ -71,7 +71,44 @@ const createRecipe = async (req, res) => {
     });
   }
 };
+const getAllRecipes = async (req, res) => {
+  try {
+    const [recipes] = await pool.query(`
+      SELECT
+        r.id,
+        r.title,
+        r.description,
+        r.preparation_time,
+        r.created_at,
+        u.id AS creator_id,
+        u.name AS creator_name,
+        c.id AS category_id,
+        c.name AS category_name
+      FROM recipes r
+      INNER JOIN users u
+        ON r.user_id = u.id
+      INNER JOIN categories c
+        ON r.category_id = c.id
+      ORDER BY r.created_at DESC
+    `);
+
+    res.status(200).json({
+      success: true,
+      count: recipes.length,
+      data: recipes
+    });
+
+  } catch (error) {
+    console.error("Get all recipes error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+  }
+};
 
 module.exports = {
-  createRecipe
+  createRecipe,
+  getAllRecipes
 };
