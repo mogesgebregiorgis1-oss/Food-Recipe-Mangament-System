@@ -165,8 +165,92 @@ const getRecipeById = async (req, res) => {
   }
 };
 
+const updateRecipe = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const {
+      title,
+      description,
+      preparation_time,
+      category_id
+    } = req.body;
+
+    if (
+      !title ||
+      !description ||
+      !preparation_time ||
+      !category_id
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Title, description, preparation time, and category are required"
+      });
+    }
+
+    const [recipes] = await pool.query(
+      `SELECT id
+       FROM recipes
+       WHERE id = ? AND user_id = ?`,
+      [id, req.user.id]
+    );
+
+    if (recipes.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Recipe not found or you are not allowed to update it"
+      });
+    }
+
+    const [categories] = await pool.query(
+      "SELECT id FROM categories WHERE id = ?",
+      [category_id]
+    );
+
+    if (categories.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Category not found"
+      });
+    }
+
+    await pool.query(
+      `UPDATE recipes
+       SET title = ?,
+           description = ?,
+           preparation_time = ?,
+           category_id = ?
+       WHERE id = ? AND user_id = ?`,
+      [
+        title,
+        description,
+        preparation_time,
+        category_id,
+        id,
+        req.user.id
+      ]
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Recipe updated successfully"
+    });
+
+  } catch (error) {
+    console.error("Update recipe error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+  }
+};
+
 module.exports = {
   createRecipe,
   getAllRecipes,
-  getRecipeById
+  getRecipeById,
+  updateRecipe
 };
