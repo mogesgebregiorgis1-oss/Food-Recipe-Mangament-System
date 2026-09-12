@@ -4,7 +4,8 @@ const {
   createRecipe,
   getAllRecipes,
   getRecipeById,
-  updateRecipe
+  updateRecipe,
+  deleteRecipe
 } = require("../controllers/recipeController");
 
 const protect = require("../middleware/authMiddleware");
@@ -20,5 +21,6 @@ router.get("/:id", getRecipeById);
 
 router.put("/:id", protect, updateRecipe);
 
+router.delete("/:id", protect, deleteRecipe);
 
 module.exports = router;

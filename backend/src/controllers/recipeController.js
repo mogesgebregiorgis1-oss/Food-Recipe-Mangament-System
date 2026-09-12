@@ -248,9 +248,53 @@ const updateRecipe = async (req, res) => {
   }
 };
 
+const deleteRecipe = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Check whether the recipe belongs to the logged-in user
+    const [recipes] = await pool.query(
+      `SELECT id
+       FROM recipes
+       WHERE id = ? AND user_id = ?`,
+      [id, req.user.id]
+    );
+
+    if (recipes.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Recipe not found or you are not allowed to delete it"
+      });
+    }
+
+    // 2. Delete the recipe
+    await pool.query(
+      `DELETE FROM recipes
+       WHERE id = ? AND user_id = ?`,
+      [id, req.user.id]
+    );
+
+    // 3. Send response
+    res.status(200).json({
+      success: true,
+      message: "Recipe deleted successfully"
+    });
+
+  } catch (error) {
+    console.error("Delete recipe error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+  }
+};
+
 module.exports = {
   createRecipe,
   getAllRecipes,
   getRecipeById,
-  updateRecipe
+  updateRecipe,
+  deleteRecipe
 };
