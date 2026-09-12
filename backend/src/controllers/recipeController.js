@@ -108,7 +108,65 @@ const getAllRecipes = async (req, res) => {
   }
 };
 
+const getRecipeById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [recipes] = await pool.query(
+      `
+      SELECT
+        r.id,
+        r.title,
+        r.description,
+        r.preparation_time,
+        r.created_at,
+        r.updated_at,
+
+        u.id AS creator_id,
+        u.name AS creator_name,
+        u.profile_image AS creator_image,
+
+        c.id AS category_id,
+        c.name AS category_name,
+        c.description AS category_description
+
+      FROM recipes r
+
+      INNER JOIN users u
+        ON r.user_id = u.id
+
+      INNER JOIN categories c
+        ON r.category_id = c.id
+
+      WHERE r.id = ?
+      `,
+      [id]
+    );
+
+    if (recipes.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Recipe not found"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: recipes[0]
+    });
+
+  } catch (error) {
+    console.error("Get recipe by ID error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+  }
+};
+
 module.exports = {
   createRecipe,
-  getAllRecipes
+  getAllRecipes,
+  getRecipeById
 };
