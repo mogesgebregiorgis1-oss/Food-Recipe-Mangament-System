@@ -73,24 +73,78 @@ const createRecipe = async (req, res) => {
 };
 const getAllRecipes = async (req, res) => {
   try {
-    const [recipes] = await pool.query(`
-      SELECT
+    const {
+      search,
+      category_id,
+      max_time,
+      ingredient
+    } = req.query;
+
+    let sql = `
+      SELECT DISTINCT
         r.id,
         r.title,
         r.description,
         r.preparation_time,
         r.created_at,
+        r.updated_at,
+
         u.id AS creator_id,
         u.name AS creator_name,
+
         c.id AS category_id,
         c.name AS category_name
+
       FROM recipes r
+
       INNER JOIN users u
         ON r.user_id = u.id
+
       INNER JOIN categories c
         ON r.category_id = c.id
-      ORDER BY r.created_at DESC
-    `);
+    `;
+
+    const conditions = [];
+    const values = [];
+
+    // Search by recipe title
+    if (search) {
+      conditions.push(`r.title LIKE ?`);
+      values.push(`%${search}%`);
+    }
+
+    // Filter by category
+    if (category_id) {
+      conditions.push(`r.category_id = ?`);
+      values.push(category_id);
+    }
+
+    // Filter by maximum preparation time
+    if (max_time) {
+      conditions.push(`r.preparation_time <= ?`);
+      values.push(max_time);
+    }
+
+    // Filter by ingredient
+    if (ingredient) {
+      sql += `
+        INNER JOIN ingredients i
+          ON r.id = i.recipe_id
+      `;
+
+      conditions.push(`i.name LIKE ?`);
+      values.push(`%${ingredient}%`);
+    }
+
+    // Add WHERE if there are conditions
+    if (conditions.length > 0) {
+      sql += ` WHERE ` + conditions.join(" AND ");
+    }
+
+    // Latest recipes first
+    sql += ` ORDER BY r.created_at DESC`;
+
+    const [recipes] = await pool.query(sql, values);
 
     res.status(200).json({
       success: true,
@@ -252,7 +306,6 @@ const deleteRecipe = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // 1. Check whether the recipe belongs to the logged-in user
     const [recipes] = await pool.query(
       `SELECT id
        FROM recipes
@@ -268,14 +321,12 @@ const deleteRecipe = async (req, res) => {
       });
     }
 
-    // 2. Delete the recipe
     await pool.query(
       `DELETE FROM recipes
        WHERE id = ? AND user_id = ?`,
       [id, req.user.id]
     );
 
-    // 3. Send response
     res.status(200).json({
       success: true,
       message: "Recipe deleted successfully"
