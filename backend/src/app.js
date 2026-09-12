@@ -3,6 +3,7 @@ const cors = require("cors");
 const pool = require("./config/db");
 
 const authRoutes = require("./routes/authRoutes");
+const recipeRoutes = require("./routes/recipeRoutes");
 
 const app = express();
 
@@ -35,7 +36,8 @@ app.get("/api/test-db", async (req, res) => {
   }
 });
 
-// Authentication routes
+
 app.use("/api/auth", authRoutes);
+app.use("/api/recipes", recipeRoutes);
 
 module.exports = app;

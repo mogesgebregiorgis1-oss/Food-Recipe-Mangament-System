@@ -5,7 +5,7 @@ const protect = (req, res, next) => {
     
     const authHeader = req.headers.authorization;
 
-    // Check if token exists
+    
     if (!authHeader) {
       return res.status(401).json({
         success: false,
