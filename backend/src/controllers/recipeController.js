@@ -77,8 +77,37 @@ const getAllRecipes = async (req, res) => {
       search,
       category_id,
       max_time,
-      ingredient
+      ingredient,
+      page = 1,
+      limit = 10,
+      sort = "newest"
     } = req.query;
+
+    const pageNumber = Number(page);
+    const limitNumber = Number(limit);
+
+    if (
+      !Number.isInteger(pageNumber) ||
+      pageNumber < 1
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Page must be a positive integer"
+      });
+    }
+
+    if (
+      !Number.isInteger(limitNumber) ||
+      limitNumber < 1 ||
+      limitNumber > 50
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Limit must be between 1 and 50"
+      });
+    }
+
+    const offset = (pageNumber - 1) * limitNumber;
 
     let sql = `
       SELECT DISTINCT
@@ -107,25 +136,21 @@ const getAllRecipes = async (req, res) => {
     const conditions = [];
     const values = [];
 
-    // Search by recipe title
     if (search) {
       conditions.push(`r.title LIKE ?`);
       values.push(`%${search}%`);
     }
 
-    // Filter by category
     if (category_id) {
       conditions.push(`r.category_id = ?`);
       values.push(category_id);
     }
 
-    // Filter by maximum preparation time
     if (max_time) {
       conditions.push(`r.preparation_time <= ?`);
       values.push(max_time);
     }
 
-    // Filter by ingredient
     if (ingredient) {
       sql += `
         INNER JOIN ingredients i
@@ -136,19 +161,108 @@ const getAllRecipes = async (req, res) => {
       values.push(`%${ingredient}%`);
     }
 
-    // Add WHERE if there are conditions
     if (conditions.length > 0) {
       sql += ` WHERE ` + conditions.join(" AND ");
     }
 
-    // Latest recipes first
-    sql += ` ORDER BY r.created_at DESC`;
+    switch (sort) {
+      case "oldest":
+        sql += ` ORDER BY r.created_at ASC`;
+        break;
 
-    const [recipes] = await pool.query(sql, values);
+      case "time_asc":
+        sql += ` ORDER BY r.preparation_time ASC`;
+        break;
+
+      case "time_desc":
+        sql += ` ORDER BY r.preparation_time DESC`;
+        break;
+
+      case "newest":
+      default:
+        sql += ` ORDER BY r.created_at DESC`;
+        break;
+    }
+
+    sql += ` LIMIT ? OFFSET ?`;
+
+    values.push(limitNumber, offset);
+
+    const [recipes] = await pool.query(
+      sql,
+      values
+    );
+
+    let countSql = `
+      SELECT COUNT(DISTINCT r.id) AS total
+      FROM recipes r
+
+      INNER JOIN users u
+        ON r.user_id = u.id
+
+      INNER JOIN categories c
+        ON r.category_id = c.id
+    `;
+
+    const countConditions = [];
+    const countValues = [];
+
+    if (search) {
+      countConditions.push(`r.title LIKE ?`);
+      countValues.push(`%${search}%`);
+    }
+
+    if (category_id) {
+      countConditions.push(`r.category_id = ?`);
+      countValues.push(category_id);
+    }
+
+    if (max_time) {
+      countConditions.push(`r.preparation_time <= ?`);
+      countValues.push(max_time);
+    }
+
+    if (ingredient) {
+      countSql += `
+        INNER JOIN ingredients i
+          ON r.id = i.recipe_id
+      `;
+
+      countConditions.push(`i.name LIKE ?`);
+      countValues.push(`%${ingredient}%`);
+    }
+
+    if (countConditions.length > 0) {
+      countSql += ` WHERE ` + countConditions.join(" AND ");
+    }
+
+    const [countResult] = await pool.query(
+      countSql,
+      countValues
+    );
+
+    const totalRecipes = Number(
+      countResult[0].total
+    );
+
+    const totalPages = Math.ceil(
+      totalRecipes / limitNumber
+    );
 
     res.status(200).json({
       success: true,
+
+      pagination: {
+        current_page: pageNumber,
+        per_page: limitNumber,
+        total_items: totalRecipes,
+        total_pages: totalPages,
+        has_next_page: pageNumber < totalPages,
+        has_previous_page: pageNumber > 1
+      },
+
       count: recipes.length,
+
       data: recipes
     });
 
