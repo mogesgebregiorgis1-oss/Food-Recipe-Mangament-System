@@ -6,7 +6,7 @@ const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // Check required fields
+   
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
@@ -94,7 +94,6 @@ const login = async (req, res) => {
       });
     }
 
-    // Create JWT token
     const token = jwt.sign(
       {
         id: user.id,
