@@ -29,7 +29,7 @@ function Home() {
   }, []);
 
   if (loading) {
-  return <Loading />;
+    return <Loading />;
   }
 
   if (error) {
@@ -37,26 +37,73 @@ function Home() {
   }
 
   return (
-    <div>
-      <h1>Discover Delicious Recipes</h1>
+    <main>
 
-      <p>
-        Find your favorite recipes and learn how to make them.
-      </p>
+      <section className="hero">
 
-      <div>
-        {recipes.length === 0 ? (
-          <p>No recipes found.</p>
-        ) : (
-          recipes.map((recipe) => (
-            <RecipeCard
-              key={recipe.id}
-              recipe={recipe}
-            />
-          ))
-        )}
-      </div>
-    </div>
+        <div className="container hero-content">
+
+          <p className="hero-small-title">
+            COOK • SHARE • DISCOVER
+          </p>
+
+          <h1>
+            Discover Delicious Recipes
+          </h1>
+
+          <p>
+            Find recipes, discover new flavors,
+            and learn how to create amazing meals.
+          </p>
+
+        </div>
+
+      </section>
+
+
+      <section className="recipes-section">
+
+        <div className="container">
+
+          <div className="section-header">
+
+            <div>
+              <h2>Latest Recipes</h2>
+
+              <p>
+                Explore our newest recipes.
+              </p>
+            </div>
+
+          </div>
+
+
+          {recipes.length === 0 ? (
+
+            <p>No recipes found.</p>
+
+          ) : (
+
+            <div className="recipe-grid">
+
+              {recipes.map((recipe) => (
+
+                <RecipeCard
+                  key={recipe.id}
+                  recipe={recipe}
+                />
+
+              ))}
+
+            </div>
+
+          )}
+
+        </div>
+
+      </section>
+
+    </main>
   );
 }
 
