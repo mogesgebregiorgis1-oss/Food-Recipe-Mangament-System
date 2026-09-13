@@ -182,3 +182,60 @@
     border-right-color: var(--border);
   }
 }
+
+.steps-form-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.step-form-row {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.step-number {
+  font-weight: 600;
+  padding-top: 13px;
+}
+
+.step-form-row textarea {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  resize: vertical;
+  outline: none;
+}
+
+.step-form-row textarea:focus {
+  border-color: #999;
+}
+
+.remove-step-button {
+  padding: 12px 14px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.add-step-button {
+  margin-top: 15px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+@media (max-width: 700px) {
+  .step-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .step-number {
+    padding-top: 0;
+  }
+}
