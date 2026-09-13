@@ -1,8 +1,4 @@
-import {
-  BrowserRouter,
-  Routes,
-  Route
-} from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -11,25 +7,13 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import RecipeDetails from "./pages/RecipeDetails";
-
-function CreateRecipe() {
-  return (
-    <main className="container">
-      <h1>Create Recipe</h1>
-      <p>
-        This page will be built next.
-      </p>
-    </main>
-  );
-}
+import CreateRecipe from "./pages/CreateRecipe";
 
 function Bookmarks() {
   return (
     <main className="container">
       <h1>My Bookmarks</h1>
-      <p>
-        This page will be built later.
-      </p>
+      <p>My bookmarks page will be built later.</p>
     </main>
   );
 }
@@ -41,30 +25,16 @@ function App() {
 
       <Routes>
 
-        {/* Public routes */}
+        <Route path="/" element={<Home />} />
 
-        <Route
-          path="/"
-          element={<Home />}
-        />
+        <Route path="/login" element={<Login />} />
 
-        <Route
-          path="/login"
-          element={<Login />}
-        />
-
-        <Route
-          path="/register"
-          element={<Register />}
-        />
+        <Route path="/register" element={<Register />} />
 
         <Route
           path="/recipes/:id"
           element={<RecipeDetails />}
         />
-
-
-        {/* Protected routes */}
 
         <Route element={<ProtectedRoute />}>
 

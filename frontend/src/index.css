@@ -551,3 +551,83 @@ select {
 .container > p {
   color: #666;
 }
+
+
+.create-recipe-page {
+  padding: 60px 0;
+}
+
+.create-recipe-container {
+  max-width: 750px;
+  margin: 0 auto;
+  background: white;
+  padding: 40px;
+  border-radius: 16px;
+  border: 1px solid #e5e5e5;
+}
+
+.create-recipe-container h1 {
+  font-size: 36px;
+  margin-bottom: 10px;
+}
+
+.create-recipe-intro {
+  color: #666;
+  margin-bottom: 30px;
+}
+
+.recipe-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-weight: 600;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  outline: none;
+  background: white;
+}
+
+.form-group textarea {
+  resize: vertical;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  border-color: #999;
+}
+
+.create-recipe-button {
+  padding: 14px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #222;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.create-recipe-button:hover {
+  background: #444;
+}
+
+.create-recipe-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
