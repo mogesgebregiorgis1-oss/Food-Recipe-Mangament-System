@@ -425,3 +425,20 @@ select {
     height: 350px;
   }
 }
+
+.navbar-user {
+  font-weight: 500;
+  color: #333;
+}
+
+.logout-button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #555;
+  font-weight: 500;
+}
+
+.logout-button:hover {
+  color: #000;
+}
