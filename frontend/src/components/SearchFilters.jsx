@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import api from "../services/api";
 
 function SearchFilters({ onSearch }) {
   const [search, setSearch] = useState("");
@@ -6,6 +8,30 @@ function SearchFilters({ onSearch }) {
   const [maxTime, setMaxTime] = useState("");
   const [ingredient, setIngredient] = useState("");
   const [sort, setSort] = useState("newest");
+
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await api.get("/categories");
+
+        setCategories(response.data.data);
+
+      } catch (error) {
+        console.error(
+          "Error fetching categories:",
+          error
+        );
+
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -40,7 +66,6 @@ function SearchFilters({ onSearch }) {
       className="search-filters"
       onSubmit={handleSubmit}
     >
-
       <div className="search-row">
 
         <input
@@ -63,41 +88,30 @@ function SearchFilters({ onSearch }) {
 
       </div>
 
-
       <div className="filter-row">
 
         <select
           value={categoryId}
+          disabled={categoriesLoading}
           onChange={(event) =>
             setCategoryId(event.target.value)
           }
         >
           <option value="">
-            All Categories
+            {categoriesLoading
+              ? "Loading categories..."
+              : "All Categories"}
           </option>
 
-          <option value="1">
-            Breakfast
-          </option>
-
-          <option value="2">
-            Lunch
-          </option>
-
-          <option value="3">
-            Dinner
-          </option>
-
-          <option value="4">
-            Desserts
-          </option>
-
-          <option value="5">
-            Drinks
-          </option>
-
+          {categories.map((category) => (
+            <option
+              key={category.id}
+              value={category.id}
+            >
+              {category.name}
+            </option>
+          ))}
         </select>
-
 
         <select
           value={maxTime}
@@ -124,9 +138,7 @@ function SearchFilters({ onSearch }) {
           <option value="120">
             Under 2 hours
           </option>
-
         </select>
-
 
         <select
           value={sort}
@@ -149,9 +161,7 @@ function SearchFilters({ onSearch }) {
           <option value="time_desc">
             Longest
           </option>
-
         </select>
-
 
         <button type="submit">
           Search
@@ -165,7 +175,6 @@ function SearchFilters({ onSearch }) {
         </button>
 
       </div>
-
     </form>
   );
 }
