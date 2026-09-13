@@ -535,3 +535,19 @@ select {
 .auth-link a {
   font-weight: 600;
 }
+
+.protected-loading {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.container > h1 {
+  margin-top: 50px;
+  margin-bottom: 15px;
+}
+
+.container > p {
+  color: #666;
+}
