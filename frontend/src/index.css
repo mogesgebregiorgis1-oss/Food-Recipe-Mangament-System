@@ -883,3 +883,63 @@ select {
   cursor: not-allowed;
   opacity: 0.6;
 }
+
+.recipe-rating-section {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+}
+
+.recipe-rating-section h2 {
+  margin-bottom: 0.75rem;
+}
+
+.rating-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.rating-average {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.rating-buttons {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.rating-star {
+  border: none;
+  background: transparent;
+  font-size: 2rem;
+  cursor: pointer;
+  opacity: 0.35;
+  padding: 0.2rem;
+}
+
+.rating-star.active {
+  opacity: 1;
+}
+
+.rating-star:disabled {
+  cursor: not-allowed;
+}
+
+.my-rating {
+  margin-top: 1rem;
+}
+
+.my-rating p {
+  margin-bottom: 0.75rem;
+}
+
+.remove-rating-button {
+  padding: 0.5rem 0.8rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
