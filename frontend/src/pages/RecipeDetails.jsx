@@ -25,16 +25,11 @@ const getImageUrl = (image) => {
     return "";
   }
 
-  if (
-    imageValue.startsWith("http://") ||
-    imageValue.startsWith("https://")
-  ) {
+  if (imageValue.startsWith("http://") || imageValue.startsWith("https://")) {
     return imageValue;
   }
 
-  const cleanImage = imageValue
-    .replace(/^\/+/, "")
-    .replace(/^uploads\//, "");
+  const cleanImage = imageValue.replace(/^\/+/, "").replace(/^uploads\//, "");
 
   return `http://localhost:5000/uploads/${cleanImage}`;
 };
@@ -51,28 +46,25 @@ function RecipeDetails() {
   const [isLiked, setIsLiked] = useState(false);
   const [liking, setLiking] = useState(false);
 
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [bookmarking, setBookmarking] = useState(false);
+
   useEffect(() => {
     const fetchRecipeDetails = async () => {
       try {
         setLoading(true);
         setError("");
 
-        const response = await api.get(
-          `/recipes/${id}/details`
-        );
+        const response = await api.get(`/recipes/${id}/details`);
 
         const data = response.data.data;
 
         setRecipeData(data);
 
-        const featuredImage = getImageValue(
-          data.featured_image
-        );
+        const featuredImage = getImageValue(data.featured_image);
 
         const firstImage =
-          data.images?.length > 0
-            ? getImageValue(data.images[0])
-            : "";
+          data.images?.length > 0 ? getImageValue(data.images[0]) : "";
 
         if (featuredImage) {
           setSelectedImage(featuredImage);
@@ -85,30 +77,27 @@ function RecipeDetails() {
         const token = localStorage.getItem("token");
 
         if (token) {
-          const likeStatusResponse = await api.get(
-            `/likes/${id}/status`
+          const likeStatusResponse = await api.get(`/likes/${id}/status`);
+
+          console.log("Like status:", likeStatusResponse.data);
+
+          setIsLiked(likeStatusResponse.data.data.liked);
+
+          const bookmarkStatusResponse = await api.get(
+            `/bookmarks/${id}/status`,
           );
 
-          console.log(
-            "Like status:",
-            likeStatusResponse.data
-          );
+          console.log("Bookmark status:", bookmarkStatusResponse.data);
 
-          setIsLiked(
-            likeStatusResponse.data.data.liked
-          );
+          setIsBookmarked(bookmarkStatusResponse.data.data.bookmarked);
         } else {
           setIsLiked(false);
+          setIsBookmarked(false);
         }
       } catch (error) {
-        console.error(
-          "Error fetching recipe details:",
-          error
-        );
+        console.error("Error fetching recipe details:", error);
 
-        setError(
-          "Failed to load recipe details."
-        );
+        setError("Failed to load recipe details.");
       } finally {
         setLoading(false);
       }
@@ -135,61 +124,87 @@ function RecipeDetails() {
           ...currentData,
           likes: {
             ...currentData.likes,
-            count: Math.max(
-              0,
-              currentData.likes.count - 1
-            ),
+            count: Math.max(0, currentData.likes.count - 1),
           },
         }));
 
         setIsLiked(false);
       } else {
-        // Like recipe
         await api.post(`/likes/${id}`);
 
         setRecipeData((currentData) => ({
           ...currentData,
           likes: {
             ...currentData.likes,
-            count:
-              currentData.likes.count + 1,
+            count: currentData.likes.count + 1,
           },
         }));
 
         setIsLiked(true);
       }
     } catch (error) {
-      console.error(
-        "Error updating like:",
-        error
-      );
+      console.error("Error updating like:", error);
 
       if (error.response?.status === 401) {
         alert("Please login to like this recipe.");
       } else if (error.response?.status === 409) {
-        alert(
-          "You have already liked this recipe."
-        );
+        alert("You have already liked this recipe.");
 
         try {
-          const statusResponse = await api.get(
-            `/likes/${id}/status`
-          );
+          const statusResponse = await api.get(`/likes/${id}/status`);
 
-          setIsLiked(
-            statusResponse.data.data.liked
-          );
+          setIsLiked(statusResponse.data.data.liked);
         } catch (statusError) {
-          console.error(
-            "Error checking like status:",
-            statusError
-          );
+          console.error("Error checking like status:", statusError);
         }
       } else {
         alert("Failed to update like.");
       }
     } finally {
       setLiking(false);
+    }
+  };
+
+  const handleBookmark = async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("Please login to bookmark this recipe.");
+      return;
+    }
+
+    try {
+      setBookmarking(true);
+
+      if (isBookmarked) {
+        await api.delete(`/bookmarks/${id}`);
+
+        setIsBookmarked(false);
+      } else {
+        await api.post(`/bookmarks/${id}`);
+
+        setIsBookmarked(true);
+      }
+    } catch (error) {
+      console.error("Error updating bookmark:", error);
+
+      if (error.response?.status === 401) {
+        alert("Please login to bookmark this recipe.");
+      } else if (error.response?.status === 409) {
+        alert("You have already bookmarked this recipe.");
+
+        try {
+          const statusResponse = await api.get(`/bookmarks/${id}/status`);
+
+          setIsBookmarked(statusResponse.data.data.bookmarked);
+        } catch (statusError) {
+          console.error("Error checking bookmark status:", statusError);
+        }
+      } else {
+        alert("Failed to update bookmark.");
+      }
+    } finally {
+      setBookmarking(false);
     }
   };
 
@@ -229,78 +244,56 @@ function RecipeDetails() {
     comments,
   } = recipeData;
 
-  const selectedImageUrl =
-    getImageUrl(selectedImage);
+  const selectedImageUrl = getImageUrl(selectedImage);
 
   return (
     <main className="container recipe-details-page">
-
       <section className="recipe-details-header">
-        <p className="recipe-category">
-          {category?.name}
-        </p>
+        <p className="recipe-category">{category?.name}</p>
 
         <h1>{recipe.title}</h1>
 
-        <p className="recipe-description">
-          {recipe.description}
-        </p>
+        <p className="recipe-description">{recipe.description}</p>
 
         <div className="recipe-meta">
-          <span>
-            ⏱ {recipe.preparation_time} minutes
-          </span>
+          <span>⏱ {recipe.preparation_time} minutes</span>
 
-          <span>
-            👤 {creator?.name}
-          </span>
+          <span>👤 {creator?.name}</span>
         </div>
       </section>
 
       <section className="recipe-images-section">
         <div className="main-recipe-image">
           {selectedImageUrl ? (
-            <img
-              src={selectedImageUrl}
-              alt={recipe.title}
-            />
+            <img src={selectedImageUrl} alt={recipe.title} />
           ) : (
-            <div className="recipe-image-placeholder">
-              🍽️
-            </div>
+            <div className="recipe-image-placeholder">🍽️</div>
           )}
         </div>
 
         {images?.length > 0 && (
           <div className="recipe-image-thumbnails">
             {images.map((image) => {
-              const imageUrl =
-                getImageUrl(image);
+              const imageUrl = getImageUrl(image);
 
               if (!imageUrl) {
                 return null;
               }
 
-              const imageValue =
-                getImageValue(image);
+              const imageValue = getImageValue(image);
 
               return (
                 <button
                   type="button"
                   key={image.id}
-                  onClick={() =>
-                    setSelectedImage(imageValue)
-                  }
+                  onClick={() => setSelectedImage(imageValue)}
                   className={
                     selectedImage === imageValue
                       ? "thumbnail active"
                       : "thumbnail"
                   }
                 >
-                  <img
-                    src={imageUrl}
-                    alt={recipe.title}
-                  />
+                  <img src={imageUrl} alt={recipe.title} />
                 </button>
               );
             })}
@@ -311,22 +304,30 @@ function RecipeDetails() {
       <section className="recipe-actions">
         <button
           type="button"
-          className={`like-button ${
-            isLiked ? "liked" : ""
-          }`}
+          className={`like-button ${isLiked ? "liked" : ""}`}
           onClick={handleLike}
           disabled={liking}
         >
           {isLiked ? "❤️" : "🤍"}{" "}
+          {liking ? "Updating..." : `${likes?.count || 0} likes`}
+        </button>
 
-          {liking
+        <button
+          type="button"
+          className={`bookmark-button ${isBookmarked ? "bookmarked" : ""}`}
+          onClick={handleBookmark}
+          disabled={bookmarking}
+        >
+          {isBookmarked ? "🔖" : "🔖"}{" "}
+          {bookmarking
             ? "Updating..."
-            : `${likes?.count || 0} likes`}
+            : isBookmarked
+              ? "Remove Bookmark"
+              : "Bookmark"}
         </button>
 
         <span className="recipe-rating">
-          ⭐ {rating?.average || 0} (
-          {rating?.count || 0} ratings)
+          ⭐ {rating?.average || 0} ({rating?.count || 0} ratings)
         </span>
       </section>
 
@@ -337,15 +338,11 @@ function RecipeDetails() {
           <ul className="ingredients-list">
             {ingredients.map((ingredient) => (
               <li key={ingredient.id}>
-                <strong>
-                  {ingredient.name}
-                </strong>
+                <strong>{ingredient.name}</strong>
 
-                {ingredient.quantity !== null &&
-                  ` - ${ingredient.quantity}`}
+                {ingredient.quantity !== null && ` - ${ingredient.quantity}`}
 
-                {ingredient.unit &&
-                  ` ${ingredient.unit}`}
+                {ingredient.unit && ` ${ingredient.unit}`}
               </li>
             ))}
           </ul>
@@ -360,9 +357,7 @@ function RecipeDetails() {
         {steps?.length > 0 ? (
           <ol className="steps-list">
             {steps.map((step) => (
-              <li key={step.id}>
-                {step.instruction}
-              </li>
+              <li key={step.id}>{step.instruction}</li>
             ))}
           </ol>
         ) : (
@@ -371,20 +366,13 @@ function RecipeDetails() {
       </section>
 
       <section className="recipe-section">
-        <h2>
-          Comments ({comments?.length || 0})
-        </h2>
+        <h2>Comments ({comments?.length || 0})</h2>
 
         {comments?.length > 0 ? (
           <div className="comments-list">
             {comments.map((comment) => (
-              <article
-                key={comment.id}
-                className="comment"
-              >
-                <strong>
-                  {comment.user_name}
-                </strong>
+              <article key={comment.id} className="comment">
+                <strong>{comment.user_name}</strong>
 
                 <p>{comment.comment}</p>
               </article>
@@ -394,7 +382,6 @@ function RecipeDetails() {
           <p>No comments yet.</p>
         )}
       </section>
-
     </main>
   );
 }

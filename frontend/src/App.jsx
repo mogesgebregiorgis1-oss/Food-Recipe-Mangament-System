@@ -8,15 +8,9 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import RecipeDetails from "./pages/RecipeDetails";
 import CreateRecipe from "./pages/CreateRecipe";
+import Bookmarks from "./pages/Bookmarks";
 
-function Bookmarks() {
-  return (
-    <main className="container">
-      <h1>My Bookmarks</h1>
-      <p>My bookmarks page will be built later.</p>
-    </main>
-  );
-}
+
 
 function App() {
   return (
