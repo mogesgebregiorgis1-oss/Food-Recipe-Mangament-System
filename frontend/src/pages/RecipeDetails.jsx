@@ -48,6 +48,7 @@ function RecipeDetails() {
   const [selectedImage, setSelectedImage] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [liking, setLiking] = useState(false);
 
   useEffect(() => {
     const fetchRecipeDetails = async () => {
@@ -96,6 +97,34 @@ function RecipeDetails() {
     fetchRecipeDetails();
   }, [id]);
 
+  const handleLike = async () => {
+    try {
+      setLiking(true);
+
+      await api.post(`/likes/${id}`);
+
+      setRecipeData((currentData) => ({
+        ...currentData,
+        likes: {
+          ...currentData.likes,
+          count: currentData.likes.count + 1,
+        },
+      }));
+    } catch (error) {
+      console.error("Error liking recipe:", error);
+
+      if (error.response?.status === 401) {
+        alert("Please login to like this recipe.");
+      } else if (error.response?.status === 409) {
+        alert("You already liked this recipe.");
+      } else {
+        alert("Failed to like recipe.");
+      }
+    } finally {
+      setLiking(false);
+    }
+  };
+
   if (loading) {
     return (
       <main className="recipe-details-page">
@@ -129,7 +158,7 @@ function RecipeDetails() {
     steps = [],
     likes,
     rating,
-    comments = []
+    comments = [],
   } = recipeData;
 
   return (
@@ -141,7 +170,6 @@ function RecipeDetails() {
           <div className="recipe-gallery">
 
             <div className="recipe-featured-image">
-
               {selectedImage ? (
                 <img
                   src={getImageUrl(selectedImage)}
@@ -152,7 +180,6 @@ function RecipeDetails() {
                   🍽️
                 </div>
               )}
-
             </div>
 
             {images.length > 0 && (
@@ -175,7 +202,6 @@ function RecipeDetails() {
                         setSelectedImage(imageValue)
                       }
                     >
-
                       <img
                         src={getImageUrl(image)}
                         alt={`${recipe.title} thumbnail`}
@@ -186,7 +212,6 @@ function RecipeDetails() {
                           Featured
                         </span>
                       )}
-
                     </button>
                   );
                 })}
@@ -202,9 +227,7 @@ function RecipeDetails() {
               {category.name}
             </p>
 
-            <h1>
-              {recipe.title}
-            </h1>
+            <h1>{recipe.title}</h1>
 
             <p className="recipe-details-description">
               {recipe.description}
@@ -224,9 +247,17 @@ function RecipeDetails() {
 
             <div className="recipe-stats">
 
-              <span>
-                ❤️ {likes.count} likes
-              </span>
+              <button
+                type="button"
+                className="like-button"
+                onClick={handleLike}
+                disabled={liking}
+              >
+                ❤️{" "}
+                {liking
+                  ? "Liking..."
+                  : `${likes.count} likes`}
+              </button>
 
               <span>
                 ⭐ {rating.average} (
@@ -241,14 +272,10 @@ function RecipeDetails() {
 
         <section className="recipe-section">
 
-          <h2>
-            Ingredients
-          </h2>
+          <h2>Ingredients</h2>
 
           {ingredients.length === 0 ? (
-            <p>
-              No ingredients added.
-            </p>
+            <p>No ingredients added.</p>
           ) : (
             <ul className="ingredients-list">
 
@@ -260,8 +287,7 @@ function RecipeDetails() {
                   </span>
 
                   <span>
-                    {ingredient.quantity ?? ""}
-                    {" "}
+                    {ingredient.quantity ?? ""}{" "}
                     {ingredient.unit ?? ""}
                   </span>
 
@@ -275,24 +301,16 @@ function RecipeDetails() {
 
         <section className="recipe-section">
 
-          <h2>
-            Preparation
-          </h2>
+          <h2>Preparation</h2>
 
           {steps.length === 0 ? (
-            <p>
-              No preparation steps added.
-            </p>
+            <p>No preparation steps added.</p>
           ) : (
             <ol className="steps-list">
 
               {steps.map((step) => (
                 <li key={step.id}>
-
-                  <p>
-                    {step.instruction}
-                  </p>
-
+                  <p>{step.instruction}</p>
                 </li>
               ))}
 
@@ -308,9 +326,7 @@ function RecipeDetails() {
           </h2>
 
           {comments.length === 0 ? (
-            <p>
-              No comments yet.
-            </p>
+            <p>No comments yet.</p>
           ) : (
             <div className="comments-list">
 
