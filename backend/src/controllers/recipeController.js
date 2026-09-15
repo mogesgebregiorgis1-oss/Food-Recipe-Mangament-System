@@ -122,7 +122,15 @@ const getAllRecipes = async (req, res) => {
         u.name AS creator_name,
 
         c.id AS category_id,
-        c.name AS category_name
+        c.name AS category_name,
+
+        (
+          SELECT ri.image_url
+          FROM recipe_images ri
+          WHERE ri.recipe_id = r.id
+            AND ri.is_featured = 1
+          LIMIT 1
+        ) AS featured_image
 
       FROM recipes r
 
@@ -218,7 +226,9 @@ const getAllRecipes = async (req, res) => {
     }
 
     if (max_time) {
-      countConditions.push(`r.preparation_time <= ?`);
+      countConditions.push(
+        `r.preparation_time <= ?`
+      );
       countValues.push(max_time);
     }
 
@@ -233,7 +243,8 @@ const getAllRecipes = async (req, res) => {
     }
 
     if (countConditions.length > 0) {
-      countSql += ` WHERE ` + countConditions.join(" AND ");
+      countSql +=
+        ` WHERE ` + countConditions.join(" AND ");
     }
 
     const [countResult] = await pool.query(
@@ -267,7 +278,10 @@ const getAllRecipes = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Get all recipes error:", error);
+    console.error(
+      "Get all recipes error:",
+      error
+    );
 
     res.status(500).json({
       success: false,
