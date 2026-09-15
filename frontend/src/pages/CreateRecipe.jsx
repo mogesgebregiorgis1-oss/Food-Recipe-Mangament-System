@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import api from "../services/api";
 
 function CreateRecipe() {
@@ -10,6 +9,7 @@ function CreateRecipe() {
   const [description, setDescription] = useState("");
   const [preparationTime, setPreparationTime] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [images, setImages] = useState([]);
 
   const [ingredients, setIngredients] = useState([
     {
@@ -35,11 +35,9 @@ function CreateRecipe() {
     const fetchCategories = async () => {
       try {
         const response = await api.get("/categories");
-
         setCategories(response.data.data);
       } catch (error) {
         console.error("Error fetching categories:", error);
-
         setError("Failed to load categories.");
       } finally {
         setCategoriesLoading(false);
@@ -52,16 +50,21 @@ function CreateRecipe() {
   const handleIngredientChange = (index, event) => {
     const { name, value } = event.target;
 
-    const updatedIngredients = [...ingredients];
-
-    updatedIngredients[index][name] = value;
-
-    setIngredients(updatedIngredients);
+    setIngredients((currentIngredients) =>
+      currentIngredients.map((ingredient, ingredientIndex) =>
+        ingredientIndex === index
+          ? {
+              ...ingredient,
+              [name]: value,
+            }
+          : ingredient
+      )
+    );
   };
 
   const addIngredient = () => {
-    setIngredients([
-      ...ingredients,
+    setIngredients((currentIngredients) => [
+      ...currentIngredients,
       {
         name: "",
         quantity: "",
@@ -75,26 +78,31 @@ function CreateRecipe() {
       return;
     }
 
-    const updatedIngredients = ingredients.filter(
-      (_, ingredientIndex) => ingredientIndex !== index,
+    setIngredients((currentIngredients) =>
+      currentIngredients.filter(
+        (_, ingredientIndex) => ingredientIndex !== index
+      )
     );
-
-    setIngredients(updatedIngredients);
   };
 
   const handleStepChange = (index, event) => {
     const { value } = event.target;
 
-    const updatedSteps = [...steps];
-
-    updatedSteps[index].instruction = value;
-
-    setSteps(updatedSteps);
+    setSteps((currentSteps) =>
+      currentSteps.map((step, stepIndex) =>
+        stepIndex === index
+          ? {
+              ...step,
+              instruction: value,
+            }
+          : step
+      )
+    );
   };
 
   const addStep = () => {
-    setSteps([
-      ...steps,
+    setSteps((currentSteps) => [
+      ...currentSteps,
       {
         instruction: "",
       },
@@ -106,9 +114,16 @@ function CreateRecipe() {
       return;
     }
 
-    const updatedSteps = steps.filter((_, stepIndex) => stepIndex !== index);
+    setSteps((currentSteps) =>
+      currentSteps.filter(
+        (_, stepIndex) => stepIndex !== index
+      )
+    );
+  };
 
-    setSteps(updatedSteps);
+  const handleImageChange = (event) => {
+    const selectedFiles = Array.from(event.target.files);
+    setImages(selectedFiles);
   };
 
   const handleSubmit = async (event) => {
@@ -119,8 +134,8 @@ function CreateRecipe() {
       setLoading(true);
 
       const recipeResponse = await api.post("/recipes", {
-        title,
-        description,
+        title: title.trim(),
+        description: description.trim(),
         preparation_time: Number(preparationTime),
         category_id: Number(categoryId),
       });
@@ -128,9 +143,11 @@ function CreateRecipe() {
       const recipeId = recipeResponse.data.data.id;
 
       const formattedIngredients = ingredients.map((ingredient) => ({
-        name: ingredient.name,
-        quantity: ingredient.quantity ? Number(ingredient.quantity) : null,
-        unit: ingredient.unit || null,
+        name: ingredient.name.trim(),
+        quantity: ingredient.quantity
+          ? Number(ingredient.quantity)
+          : null,
+        unit: ingredient.unit.trim() || null,
       }));
 
       await api.post("/ingredients", {
@@ -139,7 +156,7 @@ function CreateRecipe() {
       });
 
       const formattedSteps = steps.map((step) => ({
-        instruction: step.instruction,
+        instruction: step.instruction.trim(),
       }));
 
       await api.post("/recipe-steps", {
@@ -147,11 +164,44 @@ function CreateRecipe() {
         steps: formattedSteps,
       });
 
+      if (images.length > 0) {
+        const formData = new FormData();
+
+        formData.append("recipe_id", recipeId);
+
+        images.forEach((image) => {
+          formData.append("images", image);
+        });
+
+        const imageResponse = await api.post(
+          "/recipe-images",
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+
+        const uploadedImages = imageResponse.data.data;
+
+        if (uploadedImages && uploadedImages.length > 0) {
+          const featuredImage = uploadedImages[0];
+
+          await api.put(
+            `/recipe-images/${featuredImage.id}/featured`
+          );
+        }
+      }
+
       navigate(`/recipes/${recipeId}`);
     } catch (error) {
       console.error("Create recipe error:", error);
 
-      setError(error.response?.data?.message || "Failed to create recipe.");
+      setError(
+        error.response?.data?.message ||
+          "Failed to create recipe."
+      );
     } finally {
       setLoading(false);
     }
@@ -167,16 +217,25 @@ function CreateRecipe() {
             Share your favorite recipe with the community.
           </p>
 
-          {error && <p className="auth-error">{error}</p>}
+          {error && (
+            <p className="auth-error">
+              {error}
+            </p>
+          )}
 
-          <form className="recipe-form" onSubmit={handleSubmit}>
+          <form
+            className="recipe-form"
+            onSubmit={handleSubmit}
+          >
             <div className="form-group">
               <label>Recipe Title</label>
 
               <input
                 type="text"
                 value={title}
-                onChange={(event) => setTitle(event.target.value)}
+                onChange={(event) =>
+                  setTitle(event.target.value)
+                }
                 placeholder="e.g. Spicy Chicken Pasta"
                 required
               />
@@ -187,7 +246,9 @@ function CreateRecipe() {
 
               <textarea
                 value={description}
-                onChange={(event) => setDescription(event.target.value)}
+                onChange={(event) =>
+                  setDescription(event.target.value)
+                }
                 placeholder="Describe your recipe..."
                 rows="5"
                 required
@@ -200,7 +261,9 @@ function CreateRecipe() {
               <select
                 value={categoryId}
                 disabled={categoriesLoading}
-                onChange={(event) => setCategoryId(event.target.value)}
+                onChange={(event) =>
+                  setCategoryId(event.target.value)
+                }
                 required
               >
                 <option value="">
@@ -210,7 +273,10 @@ function CreateRecipe() {
                 </option>
 
                 {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
+                  <option
+                    key={category.id}
+                    value={category.id}
+                  >
                     {category.name}
                   </option>
                 ))}
@@ -218,13 +284,17 @@ function CreateRecipe() {
             </div>
 
             <div className="form-group">
-              <label>Preparation Time (minutes)</label>
+              <label>
+                Preparation Time (minutes)
+              </label>
 
               <input
                 type="number"
                 min="1"
                 value={preparationTime}
-                onChange={(event) => setPreparationTime(event.target.value)}
+                onChange={(event) =>
+                  setPreparationTime(event.target.value)
+                }
                 placeholder="e.g. 30"
                 required
               />
@@ -235,12 +305,20 @@ function CreateRecipe() {
 
               <div className="ingredients-form-list">
                 {ingredients.map((ingredient, index) => (
-                  <div className="ingredient-form-row" key={index}>
+                  <div
+                    className="ingredient-form-row"
+                    key={index}
+                  >
                     <input
                       type="text"
                       name="name"
                       value={ingredient.name}
-                      onChange={(event) => handleIngredientChange(index, event)}
+                      onChange={(event) =>
+                        handleIngredientChange(
+                          index,
+                          event
+                        )
+                      }
                       placeholder="Ingredient name"
                       required
                     />
@@ -249,7 +327,12 @@ function CreateRecipe() {
                       type="number"
                       name="quantity"
                       value={ingredient.quantity}
-                      onChange={(event) => handleIngredientChange(index, event)}
+                      onChange={(event) =>
+                        handleIngredientChange(
+                          index,
+                          event
+                        )
+                      }
                       placeholder="Quantity"
                       min="0"
                       step="0.01"
@@ -260,14 +343,21 @@ function CreateRecipe() {
                       type="text"
                       name="unit"
                       value={ingredient.unit}
-                      onChange={(event) => handleIngredientChange(index, event)}
+                      onChange={(event) =>
+                        handleIngredientChange(
+                          index,
+                          event
+                        )
+                      }
                       placeholder="Unit"
                     />
 
                     <button
                       type="button"
                       className="remove-ingredient-button"
-                      onClick={() => removeIngredient(index)}
+                      onClick={() =>
+                        removeIngredient(index)
+                      }
                       disabled={ingredients.length === 1}
                     >
                       Remove
@@ -285,26 +375,30 @@ function CreateRecipe() {
               </button>
             </div>
 
-            <button
-              type="button"
-              className="add-ingredient-button"
-              onClick={addIngredient}
-            >
-              + Add Ingredient
-            </button>
-
             <div className="form-group">
               <label>Preparation Steps</label>
 
               <div className="steps-form-list">
                 {steps.map((step, index) => (
-                  <div className="step-form-row" key={index}>
-                    <div className="step-number">Step {index + 1}</div>
+                  <div
+                    className="step-form-row"
+                    key={index}
+                  >
+                    <div className="step-number">
+                      Step {index + 1}
+                    </div>
 
                     <textarea
                       value={step.instruction}
-                      onChange={(event) => handleStepChange(index, event)}
-                      placeholder={`Describe step ${index + 1}...`}
+                      onChange={(event) =>
+                        handleStepChange(
+                          index,
+                          event
+                        )
+                      }
+                      placeholder={`Describe step ${
+                        index + 1
+                      }...`}
                       rows="3"
                       required
                     />
@@ -312,7 +406,9 @@ function CreateRecipe() {
                     <button
                       type="button"
                       className="remove-step-button"
-                      onClick={() => removeStep(index)}
+                      onClick={() =>
+                        removeStep(index)
+                      }
                       disabled={steps.length === 1}
                     >
                       Remove
@@ -330,12 +426,57 @@ function CreateRecipe() {
               </button>
             </div>
 
+            <div className="form-group">
+              <label>Recipe Images</label>
+
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageChange}
+              />
+
+              <p className="image-upload-help">
+                You can select multiple images.
+                The first image will be used
+                as the featured image.
+              </p>
+
+              {images.length > 0 && (
+                <div className="selected-images">
+                  {images.map((image, index) => (
+                    <div
+                      className="selected-image"
+                      key={index}
+                    >
+                      <img
+                        src={URL.createObjectURL(image)}
+                        alt={`Recipe preview ${
+                          index + 1
+                        }`}
+                      />
+
+                      <p>
+                        {index === 0
+                          ? "Featured image"
+                          : `Image ${index + 1}`}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <button
               type="submit"
               className="create-recipe-button"
-              disabled={loading || categoriesLoading}
+              disabled={
+                loading || categoriesLoading
+              }
             >
-              {loading ? "Creating Recipe..." : "Create Recipe"}
+              {loading
+                ? "Creating Recipe..."
+                : "Create Recipe"}
             </button>
           </form>
         </div>

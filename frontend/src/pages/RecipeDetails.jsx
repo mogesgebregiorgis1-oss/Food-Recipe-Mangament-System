@@ -4,10 +4,48 @@ import { useParams } from "react-router-dom";
 import api from "../services/api";
 import Loading from "../components/Loading";
 
+const getImageValue = (image) => {
+  if (!image) {
+    return "";
+  }
+
+  if (typeof image === "string") {
+    return image;
+  }
+
+  if (typeof image === "object" && image.image_url) {
+    return image.image_url;
+  }
+
+  return "";
+};
+
+const getImageUrl = (image) => {
+  const imageValue = getImageValue(image);
+
+  if (!imageValue) {
+    return "";
+  }
+
+  if (
+    imageValue.startsWith("http://") ||
+    imageValue.startsWith("https://")
+  ) {
+    return imageValue;
+  }
+
+  const cleanImage = imageValue
+    .replace(/^\/+/, "")
+    .replace(/^uploads\//, "");
+
+  return `http://localhost:5000/uploads/${cleanImage}`;
+};
+
 function RecipeDetails() {
   const { id } = useParams();
 
   const [recipeData, setRecipeData] = useState(null);
+  const [selectedImage, setSelectedImage] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -21,8 +59,26 @@ function RecipeDetails() {
           `/recipes/${id}/details`
         );
 
-        setRecipeData(response.data.data);
+        const data = response.data.data;
 
+        setRecipeData(data);
+
+        const featuredImage = getImageValue(
+          data.featured_image
+        );
+
+        const firstImage =
+          data.images?.length > 0
+            ? getImageValue(data.images[0])
+            : "";
+
+        if (featuredImage) {
+          setSelectedImage(featuredImage);
+        } else if (firstImage) {
+          setSelectedImage(firstImage);
+        } else {
+          setSelectedImage("");
+        }
       } catch (error) {
         console.error(
           "Error fetching recipe details:",
@@ -32,7 +88,6 @@ function RecipeDetails() {
         setError(
           "Failed to load recipe details."
         );
-
       } finally {
         setLoading(false);
       }
@@ -69,33 +124,73 @@ function RecipeDetails() {
     recipe,
     creator,
     category,
-    images,
-    featured_image,
-    ingredients,
-    steps,
+    images = [],
+    ingredients = [],
+    steps = [],
     likes,
     rating,
-    comments
+    comments = []
   } = recipeData;
 
   return (
     <main className="recipe-details-page">
-
       <div className="container">
 
-        {/* Recipe Header */}
         <section className="recipe-details-header">
 
-          <div className="recipe-details-image">
+          <div className="recipe-gallery">
 
-            {featured_image ? (
-              <img
-                src={`http://localhost:5000/uploads/${featured_image}`}
-                alt={recipe.title}
-              />
-            ) : (
-              <div className="recipe-details-placeholder">
-                🍽️
+            <div className="recipe-featured-image">
+
+              {selectedImage ? (
+                <img
+                  src={getImageUrl(selectedImage)}
+                  alt={recipe.title}
+                />
+              ) : (
+                <div className="recipe-details-placeholder">
+                  🍽️
+                </div>
+              )}
+
+            </div>
+
+            {images.length > 0 && (
+              <div className="recipe-image-thumbnails">
+
+                {images.map((image) => {
+                  const imageValue =
+                    getImageValue(image);
+
+                  return (
+                    <button
+                      type="button"
+                      key={image.id}
+                      className={`recipe-thumbnail ${
+                        selectedImage === imageValue
+                          ? "active"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        setSelectedImage(imageValue)
+                      }
+                    >
+
+                      <img
+                        src={getImageUrl(image)}
+                        alt={`${recipe.title} thumbnail`}
+                      />
+
+                      {Number(image.is_featured) === 1 && (
+                        <span className="featured-badge">
+                          Featured
+                        </span>
+                      )}
+
+                    </button>
+                  );
+                })}
+
               </div>
             )}
 
@@ -134,7 +229,8 @@ function RecipeDetails() {
               </span>
 
               <span>
-                ⭐ {rating.average} ({rating.count} ratings)
+                ⭐ {rating.average} (
+                {rating.count} ratings)
               </span>
 
             </div>
@@ -143,8 +239,6 @@ function RecipeDetails() {
 
         </section>
 
-
-        {/* Ingredients */}
         <section className="recipe-section">
 
           <h2>
@@ -179,8 +273,6 @@ function RecipeDetails() {
 
         </section>
 
-
-        {/* Preparation Steps */}
         <section className="recipe-section">
 
           <h2>
@@ -209,8 +301,6 @@ function RecipeDetails() {
 
         </section>
 
-
-        {/* Comments */}
         <section className="recipe-section">
 
           <h2>
@@ -247,7 +337,6 @@ function RecipeDetails() {
         </section>
 
       </div>
-
     </main>
   );
 }
